@@ -1,0 +1,7 @@
+# jetbrains
+cmake-build-debug/
+.idea
+
+# VS
+.vs/
+out/
