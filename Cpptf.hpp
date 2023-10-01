@@ -12,23 +12,35 @@ namespace cpptf {
 
 typedef std::string section_name;
 typedef std::string test_name;
+typedef std::vector<std::pair<test_name,bool>> test_list;
 
+////// control //////
 void complete();
 
 void change_section(const section_name& name);
 
+////// test case //////
+
 template<typename T,typename U> void isSame(const test_name&,T ,U);
 
-void except_any(const test_name&, const std::function<void()>&);
+/**
+ * test pass when throw exception in func.
+ */
+void except_any(const test_name&, const std::function<void()>& func);
+
+template<typename T> void isTrue(const test_name&, T);
+
+void allTrue(const std::vector<std::pair<test_name,bool>>&&);
 
 
+////// class //////
 namespace data {
 class General;
 std::string section_name_colum(std::string str) {
     str.resize(32, ' ');
     return str;
 }
-std::string section_name_colum_center(std::string str) {
+std::string section_name_colum_center(const std::string& str) {
     size_t padding = (32 - str.size())/2;
     std::string padding_str;
     padding_str.resize(padding,' ');
@@ -104,7 +116,6 @@ public:
         return sections.back();
     }
     bool print() {
-
         std::cout << status_colum("stats") << section_name_colum_center("section / failed") << "passed" << std::endl;
         std::cout << "==============================================" << std::endl;
         size_t check_passed = 0;
@@ -187,5 +198,20 @@ void except_any(const test_name& name, const std::function<void()>& func) {
     }
     data::test_case::build(name, false);
 }
+
+template<typename T> void isTrue(const test_name& name, T obj) {
+    if (obj) {
+        data::test_case::build(name, true);
+        return;
+    }
+    data::test_case::build(name, false);
+}
+
+void allTrue(const std::vector<std::pair<test_name,bool>>&& list) {
+    for (const auto& i : list) {
+        isTrue(i.first,i.second);
+    }
+}
+
 }  // tester_cpp
 #endif //TESTER_CPP_GENERAL_HPP_
