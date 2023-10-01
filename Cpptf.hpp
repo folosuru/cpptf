@@ -29,9 +29,11 @@ public:
     explicit test_case(std::string name,bool result) : name(std::move(name)), result(result) {}
     static void build(const std::string& name,bool result);
     [[nodiscard]] bool getTestResult() const {return result;}
-    void printResult() const {
-        if (!result) {
-            std::cout << " - [x] " << name << std::endl;
+    void printResult(bool last) const {
+        if (!last) {
+            std::cout << " |- " << name << std::endl;
+        } else {
+            std::cout << " `- " << name << std::endl;
         }
     }
 
@@ -49,18 +51,22 @@ public:
         cases.push_back(c);
     }
 
-    std::pair<int,int> print_result() {
+    std::pair<size_t, size_t> print_result() {
         size_t count = std::count_if(cases.begin(), cases.end(), [](const std::shared_ptr<test_case>& case_) {
             return case_->getTestResult();
         });
 
         if (count == cases.size()) {
-            std::cout << "[o]    " << this->name << " [" << count << "/" << cases.size() << "]" << std::endl;
+            std::cout << "[o] " << this->name << " [" << count << "/" << cases.size() << "]" << std::endl;
         } else {
-            std::cout << "[x]    " << this->name << " [" << count << "/" << cases.size() << "]" << std::endl;
+            std::cout << "[x] " << this->name << " [" << count << "/" << cases.size() << "]" << std::endl;
         }
+        size_t printed_count = 0;
         for (const auto& i : cases) {
-            i->printResult();
+            if (!i->getTestResult()) {
+                printed_count++;
+                i->printResult(printed_count==(cases.size()-count));
+            }
         }
         return std::make_pair(count,cases.size());
     }
@@ -81,8 +87,8 @@ public:
         return sections.back();
     }
     bool print() {
-        int check_passed = 0;
-        int check_total = 0;
+        size_t check_passed = 0;
+        size_t check_total = 0;
         for (const auto& i : sections) {
             auto result = i->print_result();
             check_passed += result.first;
