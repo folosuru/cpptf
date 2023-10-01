@@ -24,6 +24,23 @@ void except_any(const test_name&, const std::function<void()>&);
 
 namespace data {
 class General;
+std::string section_name_colum(std::string str) {
+    str.resize(32, ' ');
+    return str;
+}
+std::string section_name_colum_center(std::string str) {
+    size_t padding = (32 - str.size())/2;
+    std::string padding_str;
+    padding_str.resize(padding,' ');
+    if (str.size() % 2 == 1) {
+        return padding_str + str + padding_str + " ";
+    }
+    return padding_str + str + padding_str;
+}
+std::string status_colum(std::string str) {
+    str.resize(6, ' ');
+    return str;
+}
 class test_case {
 public:
     explicit test_case(std::string name,bool result) : name(std::move(name)), result(result) {}
@@ -31,9 +48,9 @@ public:
     [[nodiscard]] bool getTestResult() const {return result;}
     void printResult(bool last) const {
         if (!last) {
-            std::cout << " |- " << name << std::endl;
+            std::cout << status_colum("") << "|- " << name << std::endl;
         } else {
-            std::cout << " `- " << name << std::endl;
+            std::cout << status_colum("") << "`- " << name << std::endl;
         }
     }
 
@@ -57,9 +74,9 @@ public:
         });
 
         if (count == cases.size()) {
-            std::cout << "[o] " << this->name << " [" << count << "/" << cases.size() << "]" << std::endl;
+            std::cout << status_colum(" [o]") << section_name_colum(this->name) << " [" << count << "/" << cases.size() << "]" << std::endl;
         } else {
-            std::cout << "[x] " << this->name << " [" << count << "/" << cases.size() << "]" << std::endl;
+            std::cout << status_colum(" [x]") << section_name_colum(this->name) << " [" << count << "/" << cases.size() << "]" << std::endl;
         }
         size_t printed_count = 0;
         for (const auto& i : cases) {
@@ -87,6 +104,9 @@ public:
         return sections.back();
     }
     bool print() {
+
+        std::cout << status_colum("stats") << section_name_colum_center("section / failed") << "passed" << std::endl;
+        std::cout << "==============================================" << std::endl;
         size_t check_passed = 0;
         size_t check_total = 0;
         for (const auto& i : sections) {
@@ -94,12 +114,12 @@ public:
             check_passed += result.first;
             check_total += result.second;
         }
-        std::cout << "================" << std::endl;
+        std::cout << "==============================================" << std::endl;
         if (check_passed == check_total) {
-            std::cout << "[o]    total [" << check_passed << "/" << check_total << "]" << std::endl;
+            std::cout << status_colum(" [o]") << section_name_colum("total") << " [" << check_passed << "/" << check_total << "]" << std::endl;
             return true;
         } else {
-            std::cout << "[x]    total [" << check_passed << "/" << check_total << "]" << std::endl;
+            std::cout << status_colum(" [x]") << section_name_colum("total") << " [" << check_passed << "/" << check_total << "]" << std::endl;
             return false;
         }
     }
@@ -122,7 +142,7 @@ private:
 
     General() = default;
 
-    std::unordered_map<section_name, size_t> section_index;
+    std::unordered_map<section_name , size_t> section_index;
 
     std::vector<std::shared_ptr<Section>> sections;
 
