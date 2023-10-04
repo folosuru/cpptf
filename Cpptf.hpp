@@ -113,7 +113,7 @@ public:
             section_index[now_section] = sections.size();
             sections.push_back(std::make_shared<Section>(now_section));
         }
-        return sections.[section_index[now_section]];
+        return sections[section_index[now_section]];
     }
     bool print() {
         std::cout << status_colum("stats") << section_name_colum_center("section / failed") << "passed" << std::endl;
