@@ -7,6 +7,8 @@
 #include <memory>
 #include <algorithm>
 #include <iostream>
+#include <vector>
+#include <unordered_map>
 
 namespace cpptf {
 
@@ -159,7 +161,7 @@ void complete() {
     if (data::General::getInstance()->print()) {
         return;
     } else {
-        throw std::exception("");
+        throw std::runtime_error("");
     }
 }
 
