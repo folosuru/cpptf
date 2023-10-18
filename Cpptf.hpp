@@ -17,31 +17,34 @@ typedef std::string test_name;
 typedef std::vector<std::pair<test_name,bool>> test_list;
 
 ////// control //////
-void complete();
+inline void complete();
 
-void change_section(const section_name& name);
+inline void change_section(const section_name& name);
 
 ////// test case //////
 
-template<typename T,typename U> void isSame(const test_name&,T ,U);
+template<typename T,typename U> 
+inline void isSame(const test_name&,T ,U);
 
 /**
  * test pass when throw exception in func.
  */
-void except_any(const test_name&, const std::function<void()>& func);
+inline void except_any(const test_name&, const std::function<void()>& func);
 
-template<typename T> void isTrue(const test_name&, T);
+template<typename T> 
+inline void isTrue(const test_name&, T);
 
-template<typename T> void isFalse(const test_name&, T);
+template<typename T> 
+inline void isFalse(const test_name&, T);
 
-void allTrue(const std::vector<std::pair<test_name,bool>>&&);
+inline void allTrue(const std::vector<std::pair<test_name,bool>>&&);
 
 ////// kokomade //////
 
 namespace util {
-std::string section_name_colum(std::string str);
-std::string section_name_colum_center(const std::string& str);
-std::string status_colum(std::string str);
+inline std::string section_name_colum(std::string str);
+inline std::string section_name_colum_center(const std::string& str);
+inline std::string status_colum(std::string str);
 }
 
 ////// class //////
