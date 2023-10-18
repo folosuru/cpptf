@@ -1,29 +1,27 @@
 #include "Cpptf.hpp"
 
 namespace wrong {  // all functions has a bug...
-int add_function(int a, int b);
+int add(int a, int b);
 bool longer_than(std::string string, size_t compare);
 }
 
 namespace right {
-int add_function(int a, int b);
+int add(int a, int b);
 bool longer_than(std::string string, size_t compare);
 }
 
 int main() {
     cpptf::change_section("wrong functions");
-    cpptf::isSame("1+1=2", wrong::add_function(1,1), 2);
-    cpptf::except_any("throw out of range exception", [](){
-        auto map = std::unordered_map<int,int>();
-        auto t = map[5]; // it will NOT be std::out_of_range exception.
+    cpptf::isSame("1+1=2", wrong::add(1,1), 2);
+    cpptf::except_any("out of range access", [](){
+        std::unordered_map<int,int>()[5]; // it will NOT be std::out_of_range exception.
     });
     cpptf::isTrue("foo is longer_than 2", wrong::longer_than("foo",2));
 
     cpptf::change_section("right functions");
-    cpptf::isSame("1+1=2", right::add_function(1,1), 2);
-    cpptf::except_any("throw out of range exception", [](){
-        auto map = std::unordered_map<int,int>();
-        auto t = map.at(5); // it will be std::out_of_range exception.
+    cpptf::isSame("1+1=2", right::add(1,1), 2);
+    cpptf::except_any("out of range access", [](){
+        std::unordered_map<int,int>().at(5); // it will be std::out_of_range exception.
     });
     cpptf::isTrue("foo is longer than 2", right::longer_than("foo",2));
     cpptf::complete();
