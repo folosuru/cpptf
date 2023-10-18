@@ -23,7 +23,7 @@ int main() {
     cpptf::isSame("1+1=2", right::add_function(1,1), 2);
     cpptf::except_any("throw out of range exception", [](){
         auto map = std::unordered_map<int,int>();
-        auto t = map.at(5); // it will NOT be std::out_of_range exception.
+        auto t = map.at(5); // it will be std::out_of_range exception.
     });
     cpptf::isTrue("foo is longer than 2", right::longer_than("foo",2));
     cpptf::complete();
