@@ -28,13 +28,13 @@ int main() {
     return 0;
 }
 
-int wrong::add_function(int a, int b) {
+int wrong::add(int a, int b) {
     return a + b + 1;  // yes, this is not right.
 }
 bool wrong::longer_than(std::string string, size_t compare) {
     return string.size() < compare;  // yes. this isn't work, too.
 }
-int right::add_function(int a, int b) {
+int right::add(int a, int b) {
     return a + b ;  // perfect!
 }
 bool right::longer_than(std::string string, size_t compare) {
