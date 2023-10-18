@@ -1,6 +1,6 @@
 #pragma once
-#ifndef TESTER_CPP_GENERAL_HPP_
-#define TESTER_CPP_GENERAL_HPP_
+#ifndef CPPTF_CPPTF_HPP_
+#define CPPTF_CPPTF_HPP_
 #include <string>
 #include <functional>
 #include <utility>
@@ -226,4 +226,4 @@ std::string status_colum(std::string str) {
 }
 }
 }  // tester_cpp
-#endif //TESTER_CPP_GENERAL_HPP_
+#endif //CPPTF_CPPTF_HPP_
