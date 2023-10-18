@@ -9,6 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <mutex>
 
 namespace cpptf {
 
@@ -49,8 +50,8 @@ inline std::string status_colum(std::string str);
 
 ////// class //////
 namespace data {
+std::mutex build_mutex;
 class General;
-
 class test_case {
 public:
     explicit test_case(std::string name,bool result) : name(std::move(name)), result(result) {}
@@ -155,6 +156,7 @@ void change_section(const std::string& name) {
     data::General::getInstance()->changeSection(name);
 }
 void data::test_case::build(const std::string& name, bool result) {
+    std::lock_guard<std::mutex> lock(build_mutex);
     General::getInstance()->getNowSection()->add(std::make_shared<test_case>(name,result));
 }
 
