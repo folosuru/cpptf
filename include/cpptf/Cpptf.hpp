@@ -12,6 +12,10 @@
 #include <mutex>
 
 namespace cpptf {
+namespace impl::data {
+class General;
+class test_case;
+}
 
 typedef std::string section_name;
 typedef std::string test_name;
@@ -42,6 +46,33 @@ inline void isFalse(const test_name&, T);
 
 inline void allTrue(const std::vector<std::pair<test_name,bool>>&&);
 
+class Section {
+public:
+    static Section& create(const std::string& name);
+
+    template<typename T,typename U> inline void isSame(const test_name&,T ,U);
+
+    inline void except_any(const test_name&, const std::function<void()>& func);
+
+    template<typename T> inline void isTrue(const test_name&, T);
+
+    template<typename T> inline void isFalse(const test_name&, T);
+
+    inline void allTrue(const std::vector<std::pair<test_name,bool>>&&);
+
+    Section(const Section&) = delete;
+    Section& operator=(const Section&) = delete;
+private:
+    explicit Section(std::string name);
+    std::string name;
+    std::vector<std::shared_ptr<impl::data::test_case>> cases;
+    std::pair<size_t, size_t> print_result();
+    friend impl::data::General;
+    void add(const std::shared_ptr<impl::data::test_case>& c) {
+        cases.push_back(c);
+    }
+    friend impl::data::test_case;
+};
 
 namespace impl {
 namespace util {
@@ -49,16 +80,17 @@ inline std::string section_name_colum(std::string str);
 inline std::string section_name_colum_center(const std::string& str);
 inline std::string status_colum(std::string str);
 }
-
 ////// class //////
 namespace data {
 inline std::mutex build_mutex;
-class General;
 class test_case {
 public:
     explicit test_case(std::string name,bool result) : result(result), name(std::move(name)) {}
-    static void build(const std::string& name,bool result);
+    static void build(const std::string& name, bool result);
     [[nodiscard]] bool getTestResult() const {return result;}
+private:
+    bool result;
+    std::string name;
     void printResult(bool last) const {
         if (!last) {
             std::cout << util::status_colum("") << "|- " << name << std::endl;
@@ -66,60 +98,23 @@ public:
             std::cout << util::status_colum("") << "`- " << name << std::endl;
         }
     }
-
-private:
-    bool result;
-    std::string name;
-};
-
-
-class Section {
-public:
-    explicit Section(std::string name) : name(std::move(name)) {}
-    void add(const std::shared_ptr<test_case>& c) {
-        cases.push_back(c);
-    }
-    std::pair<size_t, size_t> print_result() {
-        size_t count = std::count_if(cases.begin(), cases.end(), [](const std::shared_ptr<test_case>& case_) {
-            return case_->getTestResult();
-        });
-        if (count == cases.size()) {
-            std::cout << util::status_colum(" [o]") << util::section_name_colum(this->name) 
-                << " [" << count << "/" << cases.size() << "]" << std::endl;
-        } else {
-            std::cout << util::status_colum(" [x]") << util::section_name_colum(this->name) 
-                << " [" << count << "/" << cases.size() << "]" << std::endl;
-        }
-        size_t printed_count = 0;
-        for (const auto& i : cases) {
-            if (!i->getTestResult()) {
-                printed_count++;
-                i->printResult(printed_count==(cases.size()-count));
-            }
-        }
-        return std::make_pair(count,cases.size());
-    }
-private:
-    std::string name;
-    std::vector<std::shared_ptr<test_case>> cases;
+    friend Section;
 };
 
 class General {
 public:
     std::shared_ptr<Section> getNowSection() {
-        if (section_index.find(now_section) == section_index.end()) {
-            section_index[now_section] = sections.size();
-            sections.push_back(std::make_shared<Section>(now_section));
-        }
-        return sections[section_index[now_section]];
+        return now_section;
     }
+
     [[nodiscard]] bool print() const {
         std::cout << util::status_colum("stats") << util::section_name_colum_center("section / failed") << "passed" << std::endl;
         std::cout << "==============================================" << std::endl;
         size_t check_passed = 0;
         size_t check_total = 0;
         for (const auto& i : sections) {
-            auto [pass, total] = i->print_result();
+            if (i.second->cases.empty()) continue;
+            auto [pass, total] = i.second->print_result();
             check_passed += pass;
             check_total += total;
         }
@@ -133,11 +128,10 @@ public:
         }
     }
     void changeSection(const section_name& name) {
-        if (this->section_index.find(name) == this->section_index.end()) {
-            section_index[name] = sections.size();
-            sections.push_back(std::make_shared<Section>(name));
+        if (this->sections.find(name) == this->sections.end()) {
+            addSection(new Section(name));
         }
-        now_section = name;
+        now_section = sections.at(name);
     }
     static std::shared_ptr<General> getInstance() {
         if (!instance) {
@@ -148,9 +142,14 @@ public:
 private:
     inline static std::shared_ptr<General> instance;
     General() = default;
-    std::unordered_map<section_name , size_t> section_index;
-    std::vector<std::shared_ptr<Section>> sections;
-    section_name now_section = "general";
+    std::shared_ptr<Section> now_section = std::shared_ptr<Section>(new Section("general"));
+    std::unordered_map<section_name, std::shared_ptr<Section>> sections = {{now_section->name ,now_section}};
+    friend Section;
+    void addSection(Section* sec) {
+        std::shared_ptr<Section> new_ptr(sec);
+        sections.insert({new_ptr->name ,new_ptr});
+        now_section = new_ptr;
+    }
 };
 
 }
@@ -172,15 +171,49 @@ std::string status_colum(std::string str) {
     str.resize(6, ' ');
     return str;
 }
-}
-}
-void change_section(const std::string& name) {
-    impl::data::General::getInstance()->changeSection(name);
+template<class T> constexpr auto run_or_return(T value) -> decltype(auto) {
+    if constexpr(std::is_invocable_v<T>) {
+        return value();
+    } else {
+        return value;
+    }
 }
 
-inline void impl::data::test_case::build(const std::string& name, bool result) {
-    std::lock_guard<std::mutex> lock(build_mutex);
-    General::getInstance()->getNowSection()->add(std::make_shared<test_case>(name,result));
+
+}
+}
+inline Section& Section::create(const std::string& name) {
+    auto* result = new Section(name);
+    impl::data::General::getInstance()->addSection(result);
+    return *result;
+}
+
+inline Section::Section(std::string name) : name(std::move(name)) {
+}
+
+inline std::pair<size_t, size_t> Section::print_result() {
+    size_t count = std::count_if(cases.begin(), cases.end(), [](const std::shared_ptr<impl::data::test_case>& case_) {
+        return case_->getTestResult();
+    });
+    if (count == cases.size()) {
+        std::cout << impl::util::status_colum(" [o]") << impl::util::section_name_colum(this->name)
+            << " [" << count << "/" << cases.size() << "]" << std::endl;
+    } else {
+        std::cout << impl::util::status_colum(" [x]") << impl::util::section_name_colum(this->name)
+            << " [" << count << "/" << cases.size() << "]" << std::endl;
+    }
+    size_t printed_count = 0;
+    for (const auto& i : cases) {
+        if (!i->getTestResult()) {
+            printed_count++;
+            i->printResult(printed_count==(cases.size()-count));
+        }
+    }
+    return std::make_pair(count,cases.size());
+}
+
+void change_section(const std::string& name) {
+    impl::data::General::getInstance()->changeSection(name);
 }
 
 ////// function impl //////
@@ -201,36 +234,50 @@ int complete_exitstatus() {
 
 template<typename T, typename U>
 void isSame(const test_name& name, T p1, U p2) {
-    if (p1 == p2) {
-        impl::data::test_case::build(name,true);
+    impl::data::General::getInstance()->getNowSection()->isSame(name,p1,p2);
+}
+template<typename T, typename U>
+void Section::isSame(const test_name&, T p1, U p2) {
+    if (impl::util::run_or_return(p1) == impl::util::run_or_return(p2)) {
+        add(std::make_shared<impl::data::test_case>(name,true));
     } else {
-        impl::data::test_case::build(name, false);
+        add(std::make_shared<impl::data::test_case>(name,false));
     }
 }
 
+
 void except_any(const test_name& name, const std::function<void()>& func) {
+    impl::data::General::getInstance()->getNowSection()->except_any(name,func);
+}
+void Section::except_any(const test_name& name, const std::function<void()>& func) {
     try {
         func();
     } catch (...) {
-        impl::data::test_case::build(name, true);
+        add(std::make_shared<impl::data::test_case>(name,true));
         return;
     }
-    impl::data::test_case::build(name, false);
+    add(std::make_shared<impl::data::test_case>(name,false));
 }
 
 template<typename T> void isTrue(const test_name& name, T obj) {
-    if (obj) {
-        impl::data::test_case::build(name, true);
+    impl::data::General::getInstance()->getNowSection()->isTrue(name, obj);
+}
+template<typename T> void Section::isTrue(const test_name& name, T obj) {
+    if (impl::util::run_or_return(obj)) {
+        add(std::make_shared<impl::data::test_case>(name,true));
         return;
     }
-    impl::data::test_case::build(name, false);
+    add(std::make_shared<impl::data::test_case>(name,false));
 }
 template<typename T> void isFalse(const test_name& name, T obj) {
-    if (!obj) {
-        impl::data::test_case::build(name, true);
+    impl::data::General::getInstance()->getNowSection()->isFalse(name, obj);
+}
+template<typename T> void Section::isFalse(const test_name& name, T obj) {
+    if (!impl::util::run_or_return(obj)) {
+    add(std::make_shared<impl::data::test_case>(name,true));
         return;
     }
-    impl::data::test_case::build(name, false);
+    add(std::make_shared<impl::data::test_case>(name,false));
 }
 
 void allTrue(const std::vector<std::pair<test_name,bool>>&& list) {

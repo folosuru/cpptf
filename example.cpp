@@ -18,12 +18,13 @@ int main() {
     });
     cpptf::isTrue("foo is longer_than 2", wrong::longer_than("foo",2));
 
-    cpptf::change_section("right functions");
-    cpptf::isSame("1+1=2", right::add(1,1), 2);
-    cpptf::except_any("out of range access", [](){
+    // Also, You can use cpptf::Section& to change section.
+    cpptf::Section& section = cpptf::Section::create("right functions");
+    section.isSame("1+1=2", right::add(1,1), 2);
+    section.except_any("out of range access", [](){
         std::unordered_map<int,int>().at(5); // it will be std::out_of_range exception.
     });
-    cpptf::isTrue("foo is longer than 2", right::longer_than("foo",2));
+    section.isTrue("foo is longer than 2", right::longer_than("foo",2));
     return cpptf::complete_exitstatus();
 }
 
