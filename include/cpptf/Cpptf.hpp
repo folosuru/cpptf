@@ -18,13 +18,15 @@ typedef std::string test_name;
 typedef std::vector<std::pair<test_name,bool>> test_list;
 
 ////// control //////
-inline void complete();
+inline bool complete();
+
+inline int complete_exitstatus();
 
 inline void change_section(const section_name& name);
 
 ////// test case //////
 
-template<typename T,typename U> 
+template<typename T,typename U>
 inline void isSame(const test_name&,T ,U);
 
 /**
@@ -40,8 +42,8 @@ inline void isFalse(const test_name&, T);
 
 inline void allTrue(const std::vector<std::pair<test_name,bool>>&&);
 
-////// kokomade //////
 
+namespace impl {
 namespace util {
 inline std::string section_name_colum(std::string str);
 inline std::string section_name_colum_center(const std::string& str);
@@ -50,11 +52,11 @@ inline std::string status_colum(std::string str);
 
 ////// class //////
 namespace data {
-std::mutex build_mutex;
+inline std::mutex build_mutex;
 class General;
 class test_case {
 public:
-    explicit test_case(std::string name,bool result) : name(std::move(name)), result(result) {}
+    explicit test_case(std::string name,bool result) : result(result), name(std::move(name)) {}
     static void build(const std::string& name,bool result);
     [[nodiscard]] bool getTestResult() const {return result;}
     void printResult(bool last) const {
@@ -111,15 +113,15 @@ public:
         }
         return sections[section_index[now_section]];
     }
-    bool print() {
+    [[nodiscard]] bool print() const {
         std::cout << util::status_colum("stats") << util::section_name_colum_center("section / failed") << "passed" << std::endl;
         std::cout << "==============================================" << std::endl;
         size_t check_passed = 0;
         size_t check_total = 0;
         for (const auto& i : sections) {
-            auto result = i->print_result();
-            check_passed += result.first;
-            check_total += result.second;
+            auto [pass, total] = i->print_result();
+            check_passed += pass;
+            check_total += total;
         }
         std::cout << "==============================================" << std::endl;
         if (check_passed == check_total) {
@@ -152,65 +154,6 @@ private:
 };
 
 }
-void change_section(const std::string& name) {
-    data::General::getInstance()->changeSection(name);
-}
-void data::test_case::build(const std::string& name, bool result) {
-    std::lock_guard<std::mutex> lock(build_mutex);
-    General::getInstance()->getNowSection()->add(std::make_shared<test_case>(name,result));
-}
-
-////// function impl //////
-
-void complete() {
-    if (data::General::getInstance()->print()) {
-        return;
-    } else {
-        throw std::runtime_error("");
-    }
-}
-
-////// test case //////
-
-template<typename T, typename U>
-void isSame(const test_name& name, T p1, U p2) {
-    if (p1 == p2) {
-        data::test_case::build(name,true);
-    } else {
-        data::test_case::build(name, false);
-    }
-}
-
-void except_any(const test_name& name, const std::function<void()>& func) {
-    try {
-        func();
-    } catch (...) {
-        data::test_case::build(name, true);
-        return;
-    }
-    data::test_case::build(name, false);
-}
-
-template<typename T> void isTrue(const test_name& name, T obj) {
-    if (obj) {
-        data::test_case::build(name, true);
-        return;
-    }
-    data::test_case::build(name, false);
-}
-template<typename T> void isFalse(const test_name& name, T obj) {
-    if (!obj) {
-        data::test_case::build(name, true);
-        return;
-    }
-    data::test_case::build(name, false);
-}
-
-void allTrue(const std::vector<std::pair<test_name,bool>>&& list) {
-    for (const auto& i : list) {
-        isTrue(i.first,i.second);
-    }
-}
 namespace util {
 std::string section_name_colum(std::string str) {
     str.resize(32, ' ');
@@ -230,5 +173,70 @@ std::string status_colum(std::string str) {
     return str;
 }
 }
-}  // tester_cpp
+}
+void change_section(const std::string& name) {
+    impl::data::General::getInstance()->changeSection(name);
+}
+
+inline void impl::data::test_case::build(const std::string& name, bool result) {
+    std::lock_guard<std::mutex> lock(build_mutex);
+    General::getInstance()->getNowSection()->add(std::make_shared<test_case>(name,result));
+}
+
+////// function impl //////
+
+bool complete() {
+    if (impl::data::General::getInstance()->print()) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+int complete_exitstatus() {
+    return complete() ? 0 : 1;
+}
+
+////// test case //////
+
+template<typename T, typename U>
+void isSame(const test_name& name, T p1, U p2) {
+    if (p1 == p2) {
+        impl::data::test_case::build(name,true);
+    } else {
+        impl::data::test_case::build(name, false);
+    }
+}
+
+void except_any(const test_name& name, const std::function<void()>& func) {
+    try {
+        func();
+    } catch (...) {
+        impl::data::test_case::build(name, true);
+        return;
+    }
+    impl::data::test_case::build(name, false);
+}
+
+template<typename T> void isTrue(const test_name& name, T obj) {
+    if (obj) {
+        impl::data::test_case::build(name, true);
+        return;
+    }
+    impl::data::test_case::build(name, false);
+}
+template<typename T> void isFalse(const test_name& name, T obj) {
+    if (!obj) {
+        impl::data::test_case::build(name, true);
+        return;
+    }
+    impl::data::test_case::build(name, false);
+}
+
+void allTrue(const std::vector<std::pair<test_name,bool>>&& list) {
+    for (const auto& i : list) {
+        isTrue(i.first,i.second);
+    }
+}
+}  // cpptf
 #endif //CPPTF_CPPTF_HPP_

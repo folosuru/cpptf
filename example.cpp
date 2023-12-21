@@ -24,8 +24,7 @@ int main() {
         std::unordered_map<int,int>().at(5); // it will be std::out_of_range exception.
     });
     cpptf::isTrue("foo is longer than 2", right::longer_than("foo",2));
-    cpptf::complete();
-    return 0;
+    return cpptf::complete_exitstatus();
 }
 
 int wrong::add(int a, int b) {
