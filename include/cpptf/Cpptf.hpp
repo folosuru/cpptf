@@ -54,6 +54,8 @@ public:
 
     template<typename T,typename U> inline void isSame(const test_name&,T ,U);
 
+    void no_throw(const test_name&, const std::function<void()>& func);
+
     template<class Exception> void except(const test_name&, const std::function<void()>& func);
 
     inline void except_any(const test_name&, const std::function<void()>& func);
@@ -61,8 +63,6 @@ public:
     template<typename T> inline void isTrue(const test_name&, T);
 
     template<typename T> inline void isFalse(const test_name&, T);
-
-    inline void allTrue(const std::vector<std::pair<test_name,bool>>&&);
 
     Section(const Section&) = delete;
     Section& operator=(const Section&) = delete;
@@ -247,6 +247,20 @@ void Section::isSame(const test_name&, T p1, U p2) {
     } else {
         add(std::make_shared<impl::data::test_case>(name,false));
     }
+}
+
+inline void no_throw(const test_name& name, const std::function<void()>& func) {
+    impl::data::General::getInstance()->getNowSection()->no_throw(name,func);
+}
+
+inline void Section::no_throw(const test_name&, const std::function<void()>& func) {
+    try {
+        func();
+    } catch (...) {
+        add(std::make_shared<impl::data::test_case>(name,false));
+        return;
+    }
+    add(std::make_shared<impl::data::test_case>(name,true));
 }
 
 template<class Exception> inline void except(const test_name& name, const std::function<void()>& func) {
