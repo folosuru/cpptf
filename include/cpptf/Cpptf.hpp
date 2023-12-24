@@ -38,6 +38,8 @@ inline void isSame(const test_name&,T ,U);
  */
 inline void except_any(const test_name&, const std::function<void()>& func);
 
+template<class Exception> inline void except(const test_name& name, const std::function<void()>& func);
+
 template<typename T> 
 inline void isTrue(const test_name&, T);
 
@@ -51,6 +53,8 @@ public:
     static Section& create(const std::string& name);
 
     template<typename T,typename U> inline void isSame(const test_name&,T ,U);
+
+    template<class Exception> void except(const test_name&, const std::function<void()>& func);
 
     inline void except_any(const test_name&, const std::function<void()>& func);
 
@@ -245,6 +249,18 @@ void Section::isSame(const test_name&, T p1, U p2) {
     }
 }
 
+template<class Exception> inline void except(const test_name& name, const std::function<void()>& func) {
+    impl::data::General::getInstance()->getNowSection()->except<Exception>(name,func);
+}
+template<class Exception> void Section::except(const test_name&, const std::function<void()>& func) {
+    try {
+        func();
+    } catch (Exception& exception) {
+        add(std::make_shared<impl::data::test_case>(name,true));
+        return;
+    }
+    add(std::make_shared<impl::data::test_case>(name,false));
+}
 
 void except_any(const test_name& name, const std::function<void()>& func) {
     impl::data::General::getInstance()->getNowSection()->except_any(name,func);
