@@ -80,7 +80,13 @@ private:
 
 namespace impl {
 namespace util {
-inline std::string section_name_colum(std::string str);
+constexpr inline std::uint_fast16_t output_status_width = 5;
+constexpr inline std::uint_fast16_t output_section_name_width = 32;
+constexpr inline std::uint_fast16_t output_passed_count_width = 6;
+
+inline std::string separator();
+inline std::string result(std::string colum, size_t passed, size_t test_count);
+inline std::string section_name_colum(std::string str, std::uint_fast16_t width = output_section_name_width);
 inline std::string section_name_colum_center(const std::string& str);
 inline std::string status_colum(std::string str);
 }
@@ -113,7 +119,7 @@ public:
 
     [[nodiscard]] bool print() const {
         std::cout << util::status_colum("stats") << util::section_name_colum_center("section / failed") << "passed" << std::endl;
-        std::cout << "==============================================" << std::endl;
+        std::cout << util::separator() << std::endl;
         size_t check_passed = 0;
         size_t check_total = 0;
         for (const auto& i : sections) {
@@ -122,12 +128,11 @@ public:
             check_passed += pass;
             check_total += total;
         }
-        std::cout << "==============================================" << std::endl;
+        std::cout << util::separator() << std::endl;
+        std::cout << util::result("total", check_passed, check_total) << std::endl;
         if (check_passed == check_total) {
-            std::cout << util::status_colum(" [o]") << util::section_name_colum("total") << " [" << check_passed << "/" << check_total << "]" << std::endl;
             return true;
         } else {
-            std::cout << util::status_colum(" [x]") << util::section_name_colum("total") << " [" << check_passed << "/" << check_total << "]" << std::endl;
             return false;
         }
     }
@@ -158,12 +163,51 @@ private:
 
 }
 namespace util {
-std::string section_name_colum(std::string str) {
-    str.resize(32, ' ');
+inline std::string text_center(const std::string& item, std::int_fast16_t width) {
+    size_t padding = (width - item.size())/2;
+    std::string padding_str;
+    padding_str.resize(padding,' ');
+    if (width - (padding*2 + item.size()) != 0) {
+        return padding_str + item + padding_str + " ";
+    }
+    return padding_str + item + padding_str;
+}
+
+std::string separator() {
+    std::string result = "";
+    result.resize(output_status_width + output_section_name_width + output_passed_count_width, '=');
+    return result;
+}
+
+inline std::string status_icon(bool status) {
+    if (status) {
+        return text_center("[o]", output_status_width);
+    } else {
+        return text_center("[x]", output_status_width);
+    }
+}
+
+inline std::string result(std::string colum, size_t passed, size_t test_count) {
+    bool status = passed==test_count;
+    const std::string passed_text = std::string("[") + std::to_string(passed) + "/" + std::to_string(test_count) + "]";
+    std::string result = status_colum(status_icon(status));
+    if (passed_text.size() > output_passed_count_width) {
+        result += section_name_colum(colum, output_section_name_width + output_passed_count_width - passed_text.size());
+        result += passed_text;
+    } else {
+        result += section_name_colum(std::move(colum));
+        result.resize(output_status_width + output_section_name_width + output_passed_count_width - passed_text.size(), ' ');
+        result += passed_text;
+    }
+    return result;
+}
+
+std::string section_name_colum(std::string str, std::uint_fast16_t width) {
+    str.resize(width, ' ');
     return str;
 }
 std::string section_name_colum_center(const std::string& str) {
-    size_t padding = (32 - str.size())/2;
+    size_t padding = (output_section_name_width - str.size())/2;
     std::string padding_str;
     padding_str.resize(padding,' ');
     if (str.size() % 2 == 1) {
@@ -172,7 +216,7 @@ std::string section_name_colum_center(const std::string& str) {
     return padding_str + str + padding_str;
 }
 std::string status_colum(std::string str) {
-    str.resize(6, ' ');
+    str.resize(output_status_width, ' ');
     return str;
 }
 template<class T> constexpr auto run_or_return(T value) -> decltype(auto) {
@@ -199,13 +243,7 @@ inline std::pair<size_t, size_t> Section::print_result() {
     size_t count = std::count_if(cases.begin(), cases.end(), [](const std::shared_ptr<impl::data::test_case>& case_) {
         return case_->getTestResult();
     });
-    if (count == cases.size()) {
-        std::cout << impl::util::status_colum(" [o]") << impl::util::section_name_colum(this->name)
-            << " [" << count << "/" << cases.size() << "]" << std::endl;
-    } else {
-        std::cout << impl::util::status_colum(" [x]") << impl::util::section_name_colum(this->name)
-            << " [" << count << "/" << cases.size() << "]" << std::endl;
-    }
+    std::cout << impl::util::result(this->name, count, cases.size()) << std::endl;
     size_t printed_count = 0;
     for (const auto& i : cases) {
         if (!i->getTestResult()) {
