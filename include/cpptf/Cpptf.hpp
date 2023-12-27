@@ -78,6 +78,43 @@ private:
     friend impl::data::test_case;
 };
 
+class TestPattern {
+public:
+    explicit TestPattern(Section& section, std::string pattern_name) : section_(section), name(std::move(pattern_name)){};
+
+    template<typename T,typename U> inline void isSame(T t,U u) {
+        section_.isSame(getTestName(), t,u);
+    }
+
+    void no_throw(const std::function<void()>& func) {
+        section_.no_throw(getTestName(), func);
+    }
+    template<class Exception> void except( const std::function<void()>& func) {
+        section_.except<Exception>(getTestName(), func);
+    }
+
+    inline void except_any(const std::function<void()>& func) {
+        section_.except_any(getTestName(), func);
+    }
+
+    template<typename T> inline void isTrue(T t) {
+        section_.isTrue(getTestName(), t);
+    }
+
+    template<typename T> inline void isFalse(T t) {
+        section_.isFalse(getTestName(), t);
+    }
+
+private:
+    Section& section_;
+    std::string name;
+    int test_count = 0;
+    std::string getTestName() {
+        ++test_count;
+        return name + " #" + std::to_string(test_count);
+    }
+};
+
 namespace impl {
 namespace util {
 constexpr inline std::uint_fast16_t output_status_width = 5;
@@ -164,7 +201,7 @@ private:
 }
 namespace util {
 inline std::string text_center(const std::string& item, std::int_fast16_t width) {
-    size_t padding = (width - item.size())/2;
+    const size_t padding = (width - item.size())/2;
     std::string padding_str;
     padding_str.resize(padding,' ');
     if (width - (padding*2 + item.size()) != 0) {
@@ -174,7 +211,7 @@ inline std::string text_center(const std::string& item, std::int_fast16_t width)
 }
 
 std::string separator() {
-    std::string result = "";
+    std::string result;
     result.resize(output_status_width + output_section_name_width + output_passed_count_width, '=');
     return result;
 }
@@ -188,7 +225,7 @@ inline std::string status_icon(bool status) {
 }
 
 inline std::string result(std::string colum, size_t passed, size_t test_count) {
-    bool status = passed==test_count;
+    const bool status = passed==test_count;
     const std::string passed_text = std::string("[") + std::to_string(passed) + "/" + std::to_string(test_count) + "]";
     std::string result = status_colum(status_icon(status));
     if (passed_text.size() > output_passed_count_width) {
@@ -207,7 +244,7 @@ std::string section_name_colum(std::string str, std::uint_fast16_t width) {
     return str;
 }
 std::string section_name_colum_center(const std::string& str) {
-    size_t padding = (output_section_name_width - str.size())/2;
+    const size_t padding = (output_section_name_width - str.size())/2;
     std::string padding_str;
     padding_str.resize(padding,' ');
     if (str.size() % 2 == 1) {

@@ -25,6 +25,21 @@ int main() {
         std::unordered_map<int,int>().at(5); // it will be std::out_of_range exception.
     });
     section.isTrue("foo is longer than 2", right::longer_than("foo",2));
+
+    // you can use cpptf::TestPattern to do many test...
+    cpptf::Section& section2 = cpptf::Section::create("add function test");
+    {
+        cpptf::TestPattern right_tests(section2, "right add function test");
+        right_tests.isSame( right::add(1,1), 2);
+        right_tests.isSame( right::add(1,3), 4);
+        right_tests.isSame( right::add(1,-3), -2);
+    }
+    {
+        cpptf::TestPattern wrong_tests(section2, "wrong add function test");
+        wrong_tests.isSame( wrong::add(1,1), 2);
+        wrong_tests.isSame( wrong::add(1,3), 4);
+        wrong_tests.isSame( wrong::add(1,-3), -2);
+    }
     return cpptf::complete_exitstatus();
 }
 
