@@ -241,11 +241,11 @@ void isSame(const test_name& name, T p1, U p2) {
     impl::data::General::getInstance()->getNowSection()->isSame(name,p1,p2);
 }
 template<typename T, typename U>
-void Section::isSame(const test_name&, T p1, U p2) {
+void Section::isSame(const test_name& test_name_, T p1, U p2) {
     if (impl::util::run_or_return(p1) == impl::util::run_or_return(p2)) {
-        add(std::make_shared<impl::data::test_case>(name,true));
+        add(std::make_shared<impl::data::test_case>(test_name_,true));
     } else {
-        add(std::make_shared<impl::data::test_case>(name,false));
+        add(std::make_shared<impl::data::test_case>(test_name_,false));
     }
 }
 
@@ -253,61 +253,61 @@ inline void no_throw(const test_name& name, const std::function<void()>& func) {
     impl::data::General::getInstance()->getNowSection()->no_throw(name,func);
 }
 
-inline void Section::no_throw(const test_name&, const std::function<void()>& func) {
+inline void Section::no_throw(const test_name& test_name_, const std::function<void()>& func) {
     try {
         func();
     } catch (...) {
-        add(std::make_shared<impl::data::test_case>(name,false));
+        add(std::make_shared<impl::data::test_case>(test_name_,false));
         return;
     }
-    add(std::make_shared<impl::data::test_case>(name,true));
+    add(std::make_shared<impl::data::test_case>(test_name_,true));
 }
 
 template<class Exception> inline void except(const test_name& name, const std::function<void()>& func) {
     impl::data::General::getInstance()->getNowSection()->except<Exception>(name,func);
 }
-template<class Exception> void Section::except(const test_name&, const std::function<void()>& func) {
+template<class Exception> void Section::except(const test_name& test_name_, const std::function<void()>& func) {
     try {
         func();
     } catch (Exception& exception) {
-        add(std::make_shared<impl::data::test_case>(name,true));
+        add(std::make_shared<impl::data::test_case>(test_name_,true));
         return;
     }
-    add(std::make_shared<impl::data::test_case>(name,false));
+    add(std::make_shared<impl::data::test_case>(test_name_,false));
 }
 
 void except_any(const test_name& name, const std::function<void()>& func) {
     impl::data::General::getInstance()->getNowSection()->except_any(name,func);
 }
-void Section::except_any(const test_name& name, const std::function<void()>& func) {
+void Section::except_any(const test_name& test_name_, const std::function<void()>& func) {
     try {
         func();
     } catch (...) {
-        add(std::make_shared<impl::data::test_case>(name,true));
+        add(std::make_shared<impl::data::test_case>(test_name_,true));
         return;
     }
-    add(std::make_shared<impl::data::test_case>(name,false));
+    add(std::make_shared<impl::data::test_case>(test_name_,false));
 }
 
 template<typename T> void isTrue(const test_name& name, T obj) {
     impl::data::General::getInstance()->getNowSection()->isTrue(name, obj);
 }
-template<typename T> void Section::isTrue(const test_name& name, T obj) {
+template<typename T> void Section::isTrue(const test_name& test_name_, T obj) {
     if (impl::util::run_or_return(obj)) {
-        add(std::make_shared<impl::data::test_case>(name,true));
+        add(std::make_shared<impl::data::test_case>(test_name_,true));
         return;
     }
-    add(std::make_shared<impl::data::test_case>(name,false));
+    add(std::make_shared<impl::data::test_case>(test_name_,false));
 }
 template<typename T> void isFalse(const test_name& name, T obj) {
     impl::data::General::getInstance()->getNowSection()->isFalse(name, obj);
 }
-template<typename T> void Section::isFalse(const test_name& name, T obj) {
+template<typename T> void Section::isFalse(const test_name& test_name_, T obj) {
     if (!impl::util::run_or_return(obj)) {
-    add(std::make_shared<impl::data::test_case>(name,true));
+        add(std::make_shared<impl::data::test_case>(test_name_,true));
         return;
     }
-    add(std::make_shared<impl::data::test_case>(name,false));
+    add(std::make_shared<impl::data::test_case>(test_name_,false));
 }
 
 void allTrue(const std::vector<std::pair<test_name,bool>>&& list) {
