@@ -11,6 +11,21 @@
 #include <unordered_map>
 #include <mutex>
 
+#ifdef CPPTF_MACRO_TEST
+#define CPPTF_CONTACT(a, b) CPPTF_CONTACT_INLINE(a,b)
+#define CPPTF_CONTACT_INLINE(a, b) a ## b
+#define CPPTF_TEST(function) \
+    namespace cpptf::test { \
+    namespace { \
+        bool CPPTF_CONTACT(cpptf_testfunc_dummy_, __LINE__) = cpptf::impl::data::General::getInstance()->addTestQueue(function);\
+    }\
+    }
+#else
+
+#define CPPTF_TEST(function)
+
+#endif
+
 namespace cpptf {
 namespace impl::data {
 class General;
@@ -153,8 +168,9 @@ public:
     std::shared_ptr<Section> getNowSection() {
         return now_section;
     }
-
     [[nodiscard]] bool print() const {
+        runTestQueue();
+
         std::cout << util::status_colum("stats") << util::section_name_colum_center("section / failed") << "passed" << std::endl;
         std::cout << util::separator() << std::endl;
         size_t check_passed = 0;
@@ -185,8 +201,14 @@ public:
         }
         return instance;
     }
+    bool addTestQueue(const std::function<void()>& func) {
+        testQueue.push_back(func);
+        return true;
+    }
+
 private:
     inline static std::shared_ptr<General> instance;
+    std::vector<std::function<void()>> testQueue;
     General() = default;
     std::shared_ptr<Section> now_section = std::shared_ptr<Section>(new Section("general"));
     std::unordered_map<section_name, std::shared_ptr<Section>> sections = {{now_section->name ,now_section}};
@@ -195,6 +217,11 @@ private:
         std::shared_ptr<Section> new_ptr(sec);
         sections.insert({new_ptr->name ,new_ptr});
         now_section = new_ptr;
+    }
+    void runTestQueue() const {
+        for (const auto& i : testQueue) {
+            i();
+        }
     }
 };
 

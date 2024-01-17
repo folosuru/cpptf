@@ -1,3 +1,5 @@
+// define this to enable macro test
+#define CPPTF_MACRO_TEST
 #include "include/cpptf/Cpptf.hpp"
 
 namespace wrong {  // all functions has a bug...
@@ -42,6 +44,17 @@ int main() {
     }
     return cpptf::complete_exitstatus();
 }
+
+// You can use macro to define test in anywhere
+// CPPTF_TEST(std::function<void()> function)
+CPPTF_TEST([]{
+    cpptf::change_section("macro_test");
+    cpptf::isFalse("macro_test", false);
+})
+void macro_test_func() {
+    cpptf::isFalse("macro_test_2", false);
+}
+CPPTF_TEST(macro_test_func);
 
 int wrong::add(int a, int b) {
     return a + b + 1;  // yes, this is not right.
