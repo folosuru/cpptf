@@ -23,8 +23,6 @@ this is very simply test util.
  cpptf::complete();
  ```
 4. show result
-5. let's drink coffee.
-
 ----
 ## using macro
 define`CPPTF_MACRO_TEST` to enable macro.
@@ -41,9 +39,19 @@ CPPTF_TEST([](){
 
 if define `CPPTF_TEST_CATCH`, not caught exception will be notice in result;
 ```
+$ ./example_test
 ===========================================
        Unchaught exception is occur!
 ===========================================
 occur at : /home/folosuru/cpptf/example.cpp:63
  - what(): invalid vector subscript
+ 
+ 
+===========================================
+stats        section / failed        passed
+===========================================
+ [o] some test                        [3/3]
+===========================================
+ [o] total                            [3/3]
+
 ```
