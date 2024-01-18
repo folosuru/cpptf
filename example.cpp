@@ -1,5 +1,6 @@
 // define this to enable macro test
 #define CPPTF_MACRO_TEST
+#define CPPTF_TEST_CATCH
 #include "include/cpptf/Cpptf.hpp"
 
 namespace wrong {  // all functions has a bug...
@@ -36,12 +37,13 @@ int main() {
         right_tests.isSame( right::add(1,3), 4);
         right_tests.isSame( right::add(1,-3), -2);
     }
+    /*
     {
         cpptf::TestPattern wrong_tests(section2, "wrong add function test");
         wrong_tests.isSame( wrong::add(1,1), 2);
         wrong_tests.isSame( wrong::add(1,3), 4);
         wrong_tests.isSame( wrong::add(1,-3), -2);
-    }
+    }*/
     return cpptf::complete_exitstatus();
 }
 
@@ -54,7 +56,11 @@ CPPTF_TEST([]{
 void macro_test_func() {
     cpptf::isFalse("macro_test_2", false);
 }
-CPPTF_TEST(macro_test_func);
+CPPTF_TEST(macro_test_func)
+
+CPPTF_TEST([]{
+    std::vector<int>().at(5);
+})
 
 int wrong::add(int a, int b) {
     return a + b + 1;  // yes, this is not right.

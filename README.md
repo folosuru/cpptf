@@ -24,3 +24,26 @@ this is very simply test util.
  ```
 4. show result
 5. let's drink coffee.
+
+----
+## using macro
+define`CPPTF_MACRO_TEST` to enable macro.
+you can use this to test in anywhere.
+```c++
+#define CPPTF_MACRO_TEST
+#include <Cpptf.hpp>
+
+CPPTF_TEST([](){
+    // this code execute in call cpptf::complete();
+    cpptf::isSame("test1", targetfunc(), 1);
+})
+```
+
+if define `CPPTF_TEST_CATCH`, not caught exception will be notice in result;
+```
+===========================================
+       Unchaught exception is occur!
+===========================================
+occur at : /home/folosuru/cpptf/example.cpp:63
+ - what(): invalid vector subscript
+```

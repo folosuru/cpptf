@@ -17,13 +17,12 @@
 #define CPPTF_TEST(function) \
     namespace cpptf::test { \
     namespace { \
-        bool CPPTF_CONTACT(cpptf_testfunc_dummy_, __LINE__) = cpptf::impl::data::General::getInstance()->addTestQueue(function);\
+        bool CPPTF_CONTACT(cpptf_testfunc_dummy_, __LINE__) = cpptf::impl::data::General::getInstance()\
+                                            ->addTestQueue( __FILE__, __LINE__, function);\
     }\
     }
 #else
-
 #define CPPTF_TEST(function)
-
 #endif
 
 namespace cpptf {
@@ -135,12 +134,14 @@ namespace util {
 constexpr inline std::uint_fast16_t output_status_width = 5;
 constexpr inline std::uint_fast16_t output_section_name_width = 32;
 constexpr inline std::uint_fast16_t output_passed_count_width = 6;
+constexpr inline std::uint_fast16_t output_total_width = output_status_width + output_section_name_width + output_passed_count_width;
 
 inline std::string separator();
 inline std::string result(std::string colum, size_t passed, size_t test_count);
 inline std::string section_name_colum(std::string str, std::uint_fast16_t width = output_section_name_width);
 inline std::string section_name_colum_center(const std::string& str);
 inline std::string status_colum(std::string str);
+inline std::string center(const std::string& str);
 }
 ////// class //////
 namespace data {
@@ -170,7 +171,7 @@ public:
     }
     [[nodiscard]] bool print() const {
         runTestQueue();
-
+        std::cout << util::separator() << "\n";
         std::cout << util::status_colum("stats") << util::section_name_colum_center("section / failed") << "passed" << std::endl;
         std::cout << util::separator() << std::endl;
         size_t check_passed = 0;
@@ -201,14 +202,14 @@ public:
         }
         return instance;
     }
-    bool addTestQueue(const std::function<void()>& func) {
-        testQueue.push_back(func);
+    bool addTestQueue( const std::string& file, int line, const std::function<void()>& func) {
+        testQueue.emplace_back(func, file, line);
         return true;
     }
 
 private:
     inline static std::shared_ptr<General> instance;
-    std::vector<std::function<void()>> testQueue;
+    std::vector<std::tuple<std::function<void()>, std::string, int>> testQueue;
     General() = default;
     std::shared_ptr<Section> now_section = std::shared_ptr<Section>(new Section("general"));
     std::unordered_map<section_name, std::shared_ptr<Section>> sections = {{now_section->name ,now_section}};
@@ -218,10 +219,41 @@ private:
         sections.insert({new_ptr->name ,new_ptr});
         now_section = new_ptr;
     }
+
+    static void runTest(const std::function<void()>& func, const std::string& file, int line) {
+        std::cout << "\033[A\033[2Krunning: " << file  << ":" << line << "\n";
+        func();
+    }
+    static void removeTestRunningText() {
+        std::cout << "\033[A\033[2K\n";
+    }
     void runTestQueue() const {
-        for (const auto& i : testQueue) {
-            i();
+        std::vector<std::tuple<std::string, int, std::string>> exception_thrown;
+        std::cout <<"\n";
+        for (const auto& [func, file, line] : testQueue) {
+            #ifdef CPPTF_TEST_CATCH
+                try {
+                    runTest(func, file, line);
+                } catch (std::exception& e) {
+                    exception_thrown.emplace_back(file, line, e.what());
+                }
+            #else
+                runTest(func, file, line);
+            #endif
         }
+        removeTestRunningText();
+        #ifdef CPPTF_TEST_CATCH
+            if (!exception_thrown.empty()) {
+                std::cout << util::separator() << "\n"
+                << util::center("Unchaught exception is occur!") << "\n"
+                << util::separator() << "\n";
+                for (const auto& [file, line, what] : exception_thrown) {
+                    std::cout << "occur at : " << file << ":" << line << "\n"
+                              << " - what(): " << what << "\n";
+                }
+                std::cout << "\n";
+            }
+        #endif
     }
 };
 
@@ -283,6 +315,17 @@ std::string status_colum(std::string str) {
     str.resize(output_status_width, ' ');
     return str;
 }
+
+inline std::string center(const std::string& str) {
+    const size_t padding = (output_total_width - str.size())/2;
+    std::string padding_str;
+    padding_str.resize(padding,' ');
+    if (str.size() % 2 == 1) {
+        return padding_str + str + padding_str + " ";
+    }
+    return padding_str + str + padding_str;
+}
+
 template<class T> constexpr auto run_or_return(T value) -> decltype(auto) {
     if constexpr(std::is_invocable_v<T>) {
         return value();
